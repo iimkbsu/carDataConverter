@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공차중량 대비 마력, 토크 환산기</title>
+    <style>
+        .list-item {
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .selected {
+            font-weight: bold;
+            font-size: larger;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>공차중량 대비 마력, 토크 환산기</h2>
+
+    <h5>※<br> 
+        1. 차량 데이터 입력 후 데이터 추가를 합니다 (여러 차량 가능)<br>
+        2. 추가된 차량 데이터들 중 O 버튼을 눌러 하나를 선택합니다<br>
+        3. 환산 버튼을 누르면 선택한 차량의 공차중량 대비 마력, 토크로 환산됩니다<br><br>
+        ※ 환산한 후 차량을 추가하여 추가 환산도 가능합니다.<br>
+        (예시) <br>
+         내 차량이 1000kg 100마력 10토크이고 비교 차량이 2000kg 400마력 40토크이면 <br>
+        내 차량의 공차중량으로는 200마력 20토크의 차량입니다. 더 빠르고 가속감도 좋습니다.
+    </h5>
+
+    <label for="vehicleName">차량명:</label>
+    <input type="text" id="vehicleName" placeholder="차량명"><br><br>
+
+    <label for="weight">공차중량:</label>
+    <input type="number" id="weight" placeholder="공차중량">Kg<br><br>
+
+    <label for="horsepower">마력:</label>
+    <input type="number" id="horsepower" placeholder="마력">Hp<br><br>
+
+    <label for="torque">토크:</label>
+    <input type="number" id="torque" placeholder="토크">Kgm<br><br>
+
+    <button onclick="addToList()">차량 데이터 추가</button>
+
+    <button onClick="window.location.reload()">전체 리셋</button>
+
+    <hr>
+
+    <div id="listContainer"></div>
+
+
+    <br><button onclick="calculate()">환산</button>
+
+
+    <script>
+        var vehicleList = [];
+        var selectedItem = null;
+
+        function addToList() {
+            // 각 input 요소에서 값을 가져옴
+            var vehicleName = document.getElementById("vehicleName").value;
+            var weight = parseFloat(document.getElementById("weight").value);
+            var horsepower = parseFloat(document.getElementById("horsepower").value);
+            var torque = parseFloat(document.getElementById("torque").value);
+
+            // 객체를 생성하여 데이터 저장
+            var vehicleObject = {
+                vehicleName: vehicleName,
+                weight: weight,
+                horsepower: horsepower,
+                torque: torque
+            };
+
+            // 데이터 객체를 리스트에 추가
+            vehicleList.push(vehicleObject);
+
+            // 새로운 리스트 아이템을 만들어 추가
+            var listContainer = document.getElementById("listContainer");
+            var listItem = document.createElement("div");
+            listItem.className = "list-item";
+            listItem.innerHTML = `
+                <span>${vehicleName} &nbsp&nbsp ${weight}kg &nbsp&nbsp ${horsepower}hp &nbsp&nbsp ${torque}kgm &nbsp&nbsp </span>
+                <button onclick="selectItem(this)">O</button>
+                <button onclick="removeListItem(this)">X</button>
+            `;
+
+            listContainer.appendChild(listItem);
+
+            // 입력값 초기화
+            document.getElementById("vehicleName").value = "";
+            document.getElementById("weight").value = "";
+            document.getElementById("horsepower").value = "";
+            document.getElementById("torque").value = "";
+        }
+
+        function selectItem(button) {
+            // 선택된 아이템의 스타일 변경
+            if (selectedItem) {
+                selectedItem.classList.remove("selected");
+            }
+
+            selectedItem = button.parentNode;
+            selectedItem.classList.add("selected");
+        }
+
+        function removeListItem(button) {
+            // 부모 요소인 리스트 아이템을 찾아 삭제
+            var listItem = button.parentNode;
+            var index = Array.from(listItem.parentNode.children).indexOf(listItem);
+
+            // 리스트와 데이터에서 해당 아이템 삭제
+            vehicleList.splice(index, 1);
+            listItem.parentNode.removeChild(listItem);
+
+            // 선택된 아이템 해제
+            selectedItem = null;
+        }
+
+        function calculate() {
+            if (selectedItem) {
+                var selectedIndex = Array.from(selectedItem.parentNode.children).indexOf(selectedItem);
+                var selectedVehicle = vehicleList[selectedIndex];
+
+                // 모든 리스트의 공차중량으로 나눈 후 각 리스트의 마력 값과 토크값에 곱해서 객체와 리스트를 업데이트
+                var commonWeight = selectedVehicle.weight;
+                for (var i = 0; i < vehicleList.length; i++) {
+                    var currentVehicle = vehicleList[i];
+                    if (commonWeight >= currentVehicle.weight) {
+                        
+                        currentVehicle.horsepower = ((currentVehicle.weight / commonWeight) * currentVehicle.horsepower).toFixed(1);
+                        currentVehicle.torque = ((currentVehicle.weight / commonWeight) * currentVehicle.torque).toFixed(1);
+                        currentVehicle.weight = commonWeight;
+                    } else {
+                        
+                        currentVehicle.horsepower = ((commonWeight / currentVehicle.weight) * currentVehicle.horsepower).toFixed(1);
+                        currentVehicle.torque = ((commonWeight / currentVehicle.weight) * currentVehicle.torque).toFixed(1);
+                        currentVehicle.weight = commonWeight;
+                    }
+
+
+                    // 해당 리스트의 내용을 업데이트
+                    var listItem = document.getElementById("listContainer").children[i];
+                    listItem.children[0].textContent = `${currentVehicle.vehicleName},   변환중량:${currentVehicle.weight}kg  변환마력:${currentVehicle.horsepower}hp   변환토크:${currentVehicle.torque}kgm`;
+                }
+            } else {
+                alert("환살할 차량을 선택하세요.");
+            }
+        }
+    </script>
+
+</body>
+
+</html>
